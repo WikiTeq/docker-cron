@@ -4,7 +4,7 @@ LABEL maintainers="pavel@wikiteq.com"
 LABEL org.opencontainers.image.source=https://github.com/WikiTeq/docker-cron
 
 # Install required tools
-RUN apk add --no-cache jq curl docker-cli # inotify-tools
+RUN apk add --no-cache jq=jq-1.7.1-r0 curl=8.10.1-r0 docker-cli=26.1.5-r0
 
 # Latest releases available at https://github.com/aptible/supercronic/releases
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.32/supercronic-linux-amd64 \
