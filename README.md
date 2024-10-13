@@ -50,8 +50,6 @@ The `example_compose.yml` file uses several environment variables. Make sure to 
 - **`/var/run/docker.sock`**: This is used to enable the Docker client inside the container to communicate with the Docker daemon running on the host. Be careful when using this as it provides elevated privileges.
 - **`./logs/cron:/var/log/cron`**: Mount a directory to store the cron logs. Make sure this folder has the appropriate permissions.
 
-```
-
 ## Supercronic Integration
 
 This image uses [Supercronic](https://github.com/aptible/supercronic) to run cron jobs in a more Docker-friendly way. Supercronic provides better logging, fewer overheads, and can be easily integrated with Docker containers, making it a better alternative to the traditional `cron` utility.
@@ -68,12 +66,10 @@ Make sure these scripts are executable and are properly configured according to 
 
 ## Building and Running the Image
 To build the Docker image, use the following command:
-
 ```bash
 docker build -t wikiteq/cron .
 ```
 To run the Docker container, use:
-
 ```bash
 docker run -d --name cron wikiteq/cron
 ```
