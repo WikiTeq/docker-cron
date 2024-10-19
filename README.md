@@ -20,6 +20,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
       - DEBUG=${CRON_DEBUG:-0}
+      - TZ=America/New_York
 
   app:
     build: ./app
@@ -38,4 +39,4 @@ The `example_compose.yml` file uses several environment variables. Make sure to 
 - `COMPOSE_PROJECT_NAME`: if defined, the cron looks for the jobs in this compose project only
 - `DEBUG`: when it is `true`, it outputs more iformation for debugging
 - `CRON_LOG_DIR`: the directory where cron puts the log files of the executed jobs, `/var/log/cron` by default
-
+- `TZ` timezone used for scheduling the cron jobs
