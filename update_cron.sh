@@ -65,7 +65,7 @@ for container in $containers; do
       # Check if both schedule and command labels are set
       if [ -n "$job_schedule" ] && [ -n "$job_command" ]; then
         target_container=$(docker inspect -f '{{.Name}}' "$container" | cut -c2-) # Remove leading /
-        cron_entry="$job_schedule docker exec $target_container sh -c '$job_command' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S-\%Z)-$job_key.log"
+        cron_entry="$job_schedule docker exec $target_container sh -c '$job_command' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log"
         echo "$cron_entry" >> $CRON_FILE_NEW # Write in one line to the cron file
         log "Scheduled task for $target_container: $cron_entry"
       else
