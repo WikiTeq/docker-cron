@@ -10,14 +10,14 @@ Key Features:
 
 ## Example
 
-> **Note:** Ensure to mount the Docker socket in your `docker-compose.yml` file to allow for proper interaction with Docker:
+> **Note:** Ensure to mount the Docker socket (read-only mode) in your `docker-compose.yml` file to allow for proper interaction with Docker:
 
 ```yaml
 services:
   cron:
     image: ghcr.io/wikiteq/cron
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./logs/cron:/var/log/cron
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
