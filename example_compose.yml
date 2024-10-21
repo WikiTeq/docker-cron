@@ -12,7 +12,7 @@ services:
     build: ./app
     container_name: app
     labels:
-      - cron.mytask.schedule="* * * * *"
-      - cron.mytask.command="/usr/local/bin/app_script.sh"
-      - cron.another_task.schedule="*/2 * * * *"
-      - cron.another_task.command="/usr/local/bin/another_app_script.sh"
+      cron.mytask.schedule: "* * * * *"
+      cron.mytask.command: "/usr/local/bin/app_script.sh"
+      cron.another_task.schedule: "*/2 * * * *"
+      cron.another_task.command: "/usr/local/bin/another_app_script.sh"

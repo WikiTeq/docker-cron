@@ -36,10 +36,9 @@ jobs:
 
   # Push image to GitHub Packages.
   # The image tag pattern is:
-  # for pull-requests: <MW_CORE_VERSION>-<DATE>-<PR_NUMBER>, eg: 1.35.2-20210125-25
+  # for pull-requests: <DATE>-<PR_NUMBER>, eg: 20210125-25
   # for tags: <TAG>
   # for `master` branch: latest + <DATE>-<SHA>
-  # <MW_CORE_VERSION> being parsed from the Dockerfile
   push:
     needs: [test]
     runs-on: ubuntu-latest
