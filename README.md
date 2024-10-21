@@ -42,13 +42,13 @@ This example shows how to schedule multiple cron jobs using cron syntax. The Doc
 
 ### Environment Variables
 The `example_compose.yml` file uses several environment variables. Make sure to define these in a `.env` file in the root directory of your project:
-- **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project.
+- **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project. **Note**: If `COMPOSE_PROJECT_NAME` is not defined, the cron container will process jobs from *all* Docker Compose stacks on the computer. In this scenario, cron jobs may be executed multiple times if multiple cron containers are running without `COMPOSE_PROJECT_NAME` defined.
 - **`DEBUG`**: Set to `true` to enable detailed output for debugging purposes.
 - **`CRON_LOG_DIR`**: Defines the directory where cron stores log files for executed jobs, defaulting to `/var/log/cron`.
 
 ### Volume Mounts
 - **`/var/run/docker.sock`**: This is used to enable the Docker client inside the container to communicate with the Docker daemon running on the host. Be careful when using this as it provides elevated privileges.
-- **`./logs/cron:/var/log/cron`**: Mount a directory to store the cron logs. Make sure this folder has the appropriate permissions.
+- **`./logs/cron:/var/log/cron`**: Mount a directory to store the cron logs.
 
 ## Supercronic Integration
 
@@ -62,10 +62,12 @@ The image comes with several scripts to manage cron jobs:
 - **`startup.sh`**: This script runs at container startup to initialize all required settings and start cron jobs.
 - **`update_cron.sh`**: Used for updating cron jobs dynamically without restarting the container.
 
-Make sure these scripts are executable and are properly configured according to your needs.
-
 ## Building and Running the Image
+
+Pre-built Docker images are available for direct use. In the example, we use the latest version of the image: `ghcr.io/wikiteq/cron`. You can find all available images at: [WikiTeq Docker Cron Packages](https://github.com/WikiTeq/docker-cron/pkgs/container/cron).
+
 To build the Docker image, use the following command:
+
 ```bash
 docker build -t wikiteq/cron .
 ```
@@ -81,7 +83,6 @@ If you want to contribute to this project, please feel free to submit a pull req
 
 ## Future Improvements
 - **Non-Root User**: Modify the Dockerfile to run the container as a non-root user to enhance security and reduce potential risks.
-- **Docker Socket Mount**: Consider alternatives to mounting `/var/run/docker.sock` directly, as it exposes the Docker daemon to the container, which could lead to privilege escalation. Using more secure alternatives such as APIs or remote Docker services can help minimize this risk.
 - **Automated Testing**: Implement automated unit and integration testing to ensure code reliability and prevent issues during deployment.
 - **Health Check Endpoint**: Add a health check mechanism to verify that cron jobs are running correctly and that the container is in a healthy state.
 
