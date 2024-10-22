@@ -28,6 +28,7 @@ services:
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
       - DEBUG=${CRON_DEBUG:-0}
+      - TZ=America/New_York
 
   app:
     build: ./app
@@ -45,6 +46,7 @@ The `example_compose.yml` file uses several environment variables. Make sure to 
 - **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project. **Note**: If `COMPOSE_PROJECT_NAME` is not defined, the cron container will process jobs from *all* Docker Compose stacks on the computer. In this scenario, cron jobs may be executed multiple times if multiple cron containers are running without `COMPOSE_PROJECT_NAME` defined.
 - **`DEBUG`**: Set to `true` to enable detailed output for debugging purposes.
 - **`CRON_LOG_DIR`**: Defines the directory where cron stores log files for executed jobs, defaulting to `/var/log/cron`.
+- **`TZ`**: The timezone used for scheduling cron jobs
 
 ### Volume Mounts
 - **`/var/run/docker.sock`**: This is used to enable the Docker client inside the container to communicate with the Docker daemon running on the host. Be careful when using this as it provides elevated privileges.
