@@ -2,7 +2,8 @@
 DIR=$(dirname "$0")
 . "$DIR/functions.sh"
 
-touch /root/crontab
+# Create empty crontab file
+true > /root/crontab
 
 if isTrue "$DEBUG"; then
     supercronic -debug -inotify /root/crontab &
