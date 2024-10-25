@@ -15,6 +15,6 @@ isTrue() {
 
 log() {
   if isTrue "$DEBUG"; then
-    echo "$(timestamp) | " "$@"
+    echo "$(timestamp) |" "$@"
   fi
 }
