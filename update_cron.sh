@@ -31,14 +31,14 @@ extract_cron_command() {
 
 # Get the project name
 if [ -z "$COMPOSE_PROJECT_NAME" ]; then
-  echo "$(timestamp) COMPOSE_PROJECT_NAME is not set. The service cron will run tasks for all Docker containers."
+  echo "$(timestamp) | The COMPOSE_PROJECT_NAME variable isn't set. The cron service handles jobs for all docker containers (all docker-compose stacks) on the server."
   containers=$(docker ps -q)
 else
-  echo "$(timestamp) The service cron will run tasks for Docker containers defined in the COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME"
+  echo "$(timestamp) | The cron service handles jobs for the docker-compose stack defined in the COMPOSE_PROJECT_NAME variable: $COMPOSE_PROJECT_NAME"
   containers=$(docker ps --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" -q)
 fi
 
-echo "$(timestamp) Updating cron jobs..."
+echo "$(timestamp) | Updating cron jobs..."
 touch $CRON_FILE_NEW
 
 # Process each container
@@ -66,7 +66,7 @@ for container in $containers; do
         # Run the supercronic test
         echo "$cron_entry" >> $CRON_FILE_TEST
         if ! supercronic -test $CRON_FILE_TEST > /dev/null 2>&1; then
-          printf "\n\n%s ========================================================\n" "$(timestamp)"
+          printf "\n\n%s | ========================================================\n" "$(timestamp)"
           echo "ERROR: BAD CRON JOB '$cron_entry'"
           supercronic -debug -test $CRON_FILE_TEST
           printf "\n================================================================================\n\n"
@@ -76,7 +76,7 @@ for container in $containers; do
           log "Scheduled task for $target_container: $cron_entry"
         fi
       else
-        echo "$(timestamp) Error: job_schedule or job_command is missing."
+        echo "$(timestamp) | Error: job_schedule or job_command is missing."
       fi
     done
   fi
@@ -85,17 +85,17 @@ done
 # Check if there are changes
 if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
   # Print the changes in the crontab:
-  printf "\n\n%s Changes in the crontab file:\n" "$(timestamp)"
+  printf "\n\n%s | Changes in the crontab file:\n" "$(timestamp)"
   diff -u "$CRON_FILE" "$CRON_FILE_NEW" | tail -n +3 # Remove the first two lines containing file names
 
   # Print the updated crontab file
-  printf "\n%s Updated crontab file:\n=========================================\n" "$(timestamp)"
+  printf "\n%s | Updated crontab file:\n=========================================\n" "$(timestamp)"
   cat "$CRON_FILE_NEW"
   printf "=========================================\n\n"
 
   # Update the crontab file if it looks good for supercronic (we tested it one by one line above, but to make sure)
   if ! supercronic -test $CRON_FILE_NEW > /dev/null 2>&1; then
-    printf "\n\n%s ########################################################\n" "$(timestamp)"
+    printf "\n\n%s | ########################################################\n" "$(timestamp)"
     echo "ERROR: SOMETHING IS WRONG IN THE CRONTAB FILE"
     supercronic -debug -test $CRON_FILE_NEW
     echo "ERROR: CHANGES ARE NOT APPLIED."
@@ -107,7 +107,7 @@ if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
     cat "$CRON_FILE_NEW" > "$CRON_FILE"
   fi
 else
-  echo "$(timestamp) No changes detected in crontab file."
+  echo "$(timestamp) | No changes detected in crontab file."
 fi
 
 rm "$CRON_FILE_NEW"
