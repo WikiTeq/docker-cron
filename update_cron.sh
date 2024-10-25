@@ -66,8 +66,9 @@ for container in $containers; do
         # Run the supercronic test
         echo "$cron_entry" >> $CRON_FILE_TEST
         if ! supercronic -test $CRON_FILE_TEST > /dev/null 2>&1; then
-          printf "\n\n%s | ========================================================\n" "$(timestamp)"
-          echo "ERROR: BAD CRON JOB '$cron_entry'"
+          printf "\n%s | ========================================================\n" "$(timestamp)"
+          printf "\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n\n"
+          echo "BAD CRON JOB: '$cron_entry'"
           supercronic -debug -test $CRON_FILE_TEST
           printf "\n================================================================================\n\n"
           # TODO make the cron container unhealthy
@@ -95,8 +96,9 @@ if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
 
   # Update the crontab file if it looks good for supercronic (we tested it one by one line above, but to make sure)
   if ! supercronic -test $CRON_FILE_NEW > /dev/null 2>&1; then
-    printf "\n\n%s | ########################################################\n" "$(timestamp)"
-    echo "ERROR: SOMETHING IS WRONG IN THE CRONTAB FILE"
+    printf "\n%s | ########################################################\n" "$(timestamp)"
+    printf "\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n\n"
+    echo "SOMETHING IS WRONG IN THE CRONTAB FILE"
     supercronic -debug -test $CRON_FILE_NEW
     echo "ERROR: CHANGES ARE NOT APPLIED."
     echo "CURRENT CRONTAB FILE IS:"
