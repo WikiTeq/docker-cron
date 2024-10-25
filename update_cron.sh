@@ -89,10 +89,14 @@ if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
   printf "\n%s | Changes in the crontab file:\n" "$(timestamp)"
   diff -u "$CRON_FILE" "$CRON_FILE_NEW" | tail -n +3 # Remove the first two lines containing file names
 
-  # Print the updated crontab file
-  printf "\n%s | Updated crontab file:\n=========================================\n" "$(timestamp)"
-  cat "$CRON_FILE_NEW"
-  printf "=========================================\n\n"
+  if [ -z "$(cat filename)" ]; then
+    printf "\n%s | NO JOBS IN CRONTAB FILE\n\n" "$(timestamp)"
+  else
+    # Print the updated crontab file
+    printf "\n%s | Updated crontab file:\n=========================================\n" "$(timestamp)"
+    cat "$CRON_FILE_NEW"
+    printf "=========================================\n\n"
+  fi
 
   # Update the crontab file if it looks good for supercronic (we tested it one by one line above, but to make sure)
   if ! supercronic -test $CRON_FILE_NEW > /dev/null 2>&1; then
