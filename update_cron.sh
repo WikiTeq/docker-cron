@@ -89,7 +89,7 @@ if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
   printf "\n%s | Changes in the crontab file:\n" "$(timestamp)"
   diff -u "$CRON_FILE" "$CRON_FILE_NEW" | tail -n +3 # Remove the first two lines containing file names
 
-  if [ -z "$(cat filename)" ]; then
+  if [ ! -s "$CRON_FILE_NEW" ]; then
     printf "\n%s | NO JOBS IN CRONTAB FILE\n\n" "$(timestamp)"
   else
     # Print the updated crontab file
