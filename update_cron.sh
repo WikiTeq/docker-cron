@@ -66,11 +66,11 @@ for container in $containers; do
         # Run the supercronic test
         echo "$cron_entry" >> $CRON_FILE_TEST
         if ! supercronic -test $CRON_FILE_TEST > /dev/null 2>&1; then
-          printf "\n%s | ========================================================\n" "$(timestamp)"
+          echo "$(timestamp) | ========================================================"
           printf "\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n\n"
           echo "BAD CRON JOB: '$cron_entry'"
           supercronic -debug -test $CRON_FILE_TEST
-          printf "\n================================================================================\n\n"
+          printf "==================================================================================\n\n"
           # TODO make the cron container unhealthy
         else
           echo "$cron_entry" >> $CRON_FILE_NEW # Write in one line to the cron file
@@ -86,7 +86,7 @@ done
 # Check if there are changes
 if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
   # Print the changes in the crontab:
-  printf "\n\n%s | Changes in the crontab file:\n" "$(timestamp)"
+  printf "\n%s | Changes in the crontab file:\n" "$(timestamp)"
   diff -u "$CRON_FILE" "$CRON_FILE_NEW" | tail -n +3 # Remove the first two lines containing file names
 
   # Print the updated crontab file
@@ -96,14 +96,14 @@ if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
 
   # Update the crontab file if it looks good for supercronic (we tested it one by one line above, but to make sure)
   if ! supercronic -test $CRON_FILE_NEW > /dev/null 2>&1; then
-    printf "\n%s | ########################################################\n" "$(timestamp)"
+    echo "$(timestamp) | ########################################################"
     printf "\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n\n"
     echo "SOMETHING IS WRONG IN THE CRONTAB FILE"
     supercronic -debug -test $CRON_FILE_NEW
     echo "ERROR: CHANGES ARE NOT APPLIED."
     echo "CURRENT CRONTAB FILE IS:"
     cat "$CRON_FILE"
-    printf "\n################################################################################\n\n"
+    printf "##################################################################################\n\n"
     # TODO make the cron container unhealthy
   else
     cat "$CRON_FILE_NEW" > "$CRON_FILE"
