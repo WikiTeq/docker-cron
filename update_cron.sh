@@ -64,7 +64,7 @@ for container in $containers; do
       if [ -n "$job_schedule" ] && [ -n "$job_command" ]; then
         cron_entry="$job_schedule docker exec $target_container sh -c '$job_command' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log"
         # Run the supercronic test
-        echo "$cron_entry" >> $CRON_FILE_TEST
+        echo "$cron_entry" > $CRON_FILE_TEST
         if ! supercronic -test $CRON_FILE_TEST > /dev/null 2>&1; then
           echo "$(timestamp) | ========================================================"
           printf "\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n\n"
