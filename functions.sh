@@ -1,3 +1,7 @@
+timestamp() {
+  date -u "+%Y-%m-%d %H:%M:%S %Z"
+}
+
 isTrue() {
     case $1 in
         "True" | "TRUE" | "true" | 1)

@@ -4,15 +4,12 @@ DIR=$(dirname "$0")
 . "$DIR/functions.sh"
 
 # Temp cron file paths
+CRON_FILE_TEST="/tmp/cron_test"
 CRON_FILE_NEW="/root/crontab.new"
 CRON_FILE="/root/crontab"
 CRON_LOG_DIR=${CRON_LOG_DIR:-/var/log/cron}
 
 mkdir -p "$CRON_LOG_DIR"
-
-timestamp() {
-  date -u "+%Y-%m-%d %H:%M:%S %Z"
-}
 
 # Function to extract specific cron job labels from a container
 extract_cron_jobs() {
@@ -47,10 +44,11 @@ touch $CRON_FILE_NEW
 # Process each container
 for container in $containers; do
   cron_jobs=$(extract_cron_jobs "$container")
+  target_container=$(docker inspect -f '{{.Name}}' "$container" | cut -c2-) # Remove leading /
   if [ -z "$cron_jobs" ]; then
-    log "No cron jobs found for container: $container"
+    log "No cron jobs found for container: $target_container ($container)"
   else
-    log "Processing container: $container"
+    log "Processing container: $target_container ($container)"
 
     echo "$cron_jobs" | while IFS= read -r job; do
       decoded_job=$(decode_cron_job "$job")
@@ -64,10 +62,19 @@ for container in $containers; do
 
       # Check if both schedule and command labels are set
       if [ -n "$job_schedule" ] && [ -n "$job_command" ]; then
-        target_container=$(docker inspect -f '{{.Name}}' "$container" | cut -c2-) # Remove leading /
         cron_entry="$job_schedule docker exec $target_container sh -c '$job_command' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log"
-        echo "$cron_entry" >> $CRON_FILE_NEW # Write in one line to the cron file
-        log "Scheduled task for $target_container: $cron_entry"
+        # Run the supercronic test
+        echo "$cron_entry" >> $CRON_FILE_TEST
+        if ! supercronic -test $CRON_FILE_TEST > /dev/null 2>&1; then
+          printf "\n\n%s ========================================================\n" "$(timestamp)"
+          echo "ERROR: BAD CRON JOB '$cron_entry'"
+          supercronic -debug -test $CRON_FILE_TEST
+          printf "\n================================================================================\n\n"
+          # TODO make the cron container unhealthy
+        else
+          echo "$cron_entry" >> $CRON_FILE_NEW # Write in one line to the cron file
+          log "Scheduled task for $target_container: $cron_entry"
+        fi
       else
         echo "$(timestamp) Error: job_schedule or job_command is missing."
       fi
@@ -86,8 +93,19 @@ if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
   cat "$CRON_FILE_NEW"
   printf "=========================================\n\n"
 
-  # Update the crontab file
-  cat "$CRON_FILE_NEW" > "$CRON_FILE"
+  # Update the crontab file if it looks good for supercronic (we tested it one by one line above, but to make sure)
+  if ! supercronic -test $CRON_FILE_NEW > /dev/null 2>&1; then
+    printf "\n\n%s ########################################################\n" "$(timestamp)"
+    echo "ERROR: SOMETHING IS WRONG IN THE CRONTAB FILE"
+    supercronic -debug -test $CRON_FILE_NEW
+    echo "ERROR: CHANGES ARE NOT APPLIED."
+    echo "CURRENT CRONTAB FILE IS:"
+    cat "$CRON_FILE"
+    printf "\n################################################################################\n\n"
+    # TODO make the cron container unhealthy
+  else
+    cat "$CRON_FILE_NEW" > "$CRON_FILE"
+  fi
 else
   echo "$(timestamp) No changes detected in crontab file."
 fi
