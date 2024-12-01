@@ -5,6 +5,11 @@ DIR=$(dirname "$0")
 # Create empty crontab file
 true > /root/crontab
 
+if [ -z "$COMPOSE_PROJECT_NAME" ]; then
+  echo "$(timestamp) | The COMPOSE_PROJECT_NAME variable is required but not set."
+  exit 1
+fi
+
 if isTrue "$DEBUG"; then
     supercronic -debug -inotify /root/crontab &
 else

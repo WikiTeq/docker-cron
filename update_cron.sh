@@ -31,12 +31,12 @@ extract_cron_command() {
 
 # Get the project name
 if [ -z "$COMPOSE_PROJECT_NAME" ]; then
-  echo "$(timestamp) | The COMPOSE_PROJECT_NAME variable isn't set. The cron service handles jobs for all docker containers (all docker-compose stacks) on the server."
-  containers=$(docker ps -q)
-else
-  echo "$(timestamp) | The cron service handles jobs for the docker-compose stack defined in the COMPOSE_PROJECT_NAME variable: $COMPOSE_PROJECT_NAME"
-  containers=$(docker ps --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" -q)
+  echo "$(timestamp) | The COMPOSE_PROJECT_NAME variable is required but not set (this should have been caught earlier)."
+  exit 1
 fi
+
+echo "$(timestamp) | The cron service handles jobs for the docker-compose stack defined in the COMPOSE_PROJECT_NAME variable: $COMPOSE_PROJECT_NAME"
+containers=$(docker ps --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" -q)
 
 echo "$(timestamp) | Updating cron jobs..."
 touch $CRON_FILE_NEW

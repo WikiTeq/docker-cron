@@ -45,7 +45,7 @@ This example shows how to schedule multiple cron jobs using cron syntax. The Doc
 
 ### Environment Variables
 The `example_compose.yml` file uses several environment variables. Make sure to define these in a `.env` file in the root directory of your project:
-- **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project. **Note**: If `COMPOSE_PROJECT_NAME` is not defined, the cron container will process jobs from *all* Docker Compose stacks on the computer. In this scenario, cron jobs may be executed multiple times if multiple cron containers are running without `COMPOSE_PROJECT_NAME` defined.
+- **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project. **Required**.
 - **`DEBUG`**: Set to `true` to enable detailed output for debugging purposes.
 - **`CRON_LOG_DIR`**: Defines the directory where cron stores log files for executed jobs, defaulting to `/var/log/cron`.
 - **`TZ`**: The timezone used for scheduling cron jobs
