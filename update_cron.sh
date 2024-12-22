@@ -36,7 +36,9 @@ if [ -z "$COMPOSE_PROJECT_NAME" ]; then
 fi
 
 echo "$(timestamp) | The cron service handles jobs for the docker-compose stack defined in the COMPOSE_PROJECT_NAME variable: $COMPOSE_PROJECT_NAME"
-containers=$(docker ps --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" -q)
+
+# Filter containers by project and cron.enabled=true
+containers=$(docker ps --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" --filter "label=cron.enabled=true" -q)
 
 echo "$(timestamp) | Updating cron jobs..."
 touch $CRON_FILE_NEW
