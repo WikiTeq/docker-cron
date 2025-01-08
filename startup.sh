@@ -5,8 +5,8 @@ DIR=$(dirname "$0")
 # Create empty crontab file
 true > /root/crontab
 
-if [ -z "$COMPOSE_PROJECT_NAME" ]; then
-  echo "$(timestamp) | The COMPOSE_PROJECT_NAME variable is required but not set."
+if [ -z "$FILTER" ] && [ -z "$COMPOSE_PROJECT_NAME" ]; then
+  echo "$(timestamp) | At least one of FILTER or COMPOSE_PROJECT_NAME variables must be defined."
   exit 1
 fi
 
@@ -57,11 +57,20 @@ trap 'cleanup' TERM
 # Construct docker events command with required filters
 DOCKER_EVENTS_CMD="docker events --filter 'event=start' --filter 'event=die' --filter 'event=destroy'"
 
-# Always filter by COMPOSE_PROJECT_NAME
-DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter 'label=com.docker.compose.project=$COMPOSE_PROJECT_NAME'"
-
 # Enforce filtering by cron.enabled=true
 DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter 'label=cron.enabled=true'"
+
+# Filter by COMPOSE_PROJECT_NAME if set
+if [ -n "$COMPOSE_PROJECT_NAME" ]; then
+  DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter 'label=com.docker.compose.project=$COMPOSE_PROJECT_NAME'"
+fi
+
+# Enforce filtering by FILTER if set
+if [ -n "$FILTER" ]; then
+  for filter in $FILTER; do
+    DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter '$filter'"
+  done
+fi
 
 # Execute the docker events command
 eval "$DOCKER_EVENTS_CMD" | while IFS= read -r LINE; do

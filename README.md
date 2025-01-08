@@ -8,6 +8,7 @@ This is a Docker-based job scheduler that allows you to define and run cron jobs
 
 ## Key Features
 - **Cron-Like Syntax**: Define and schedule tasks using familiar cron syntax.
+- **Flexible Filtering**: Supports filtering containers based on `COMPOSE_PROJECT_NAME`, space-separated filters in the `FILTER` variable, or both.
 - **Easy Configuration**: Define all your jobs using Docker labels, making configuration straightforward.
 - **Logging**: Provides logging for all job executions, making monitoring and debugging simple.
 
@@ -17,8 +18,6 @@ To start using this Docker image, you can create a `docker-compose.yml` configur
 
 ### Example `docker-compose.yml`
 ```yaml
-docker-compose.yml:
-
 services:
   cron:
     image: ghcr.io/wikiteq/cron
@@ -27,6 +26,7 @@ services:
       - ./logs/cron:/var/log/cron
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+      - FILTER="name=my_app com.docker.compose.project=my_project"
       - DEBUG=${CRON_DEBUG:-0}
       - TZ=America/New_York
 
@@ -45,11 +45,13 @@ This example shows how to schedule multiple cron jobs using cron syntax. The Doc
 > **Note:** Ensure to mount the Docker socket (read-only mode) in your `docker-compose.yml` file to allow for proper interaction with Docker.
 
 ### Environment Variables
-The `example_compose.yml` file uses several environment variables. Make sure to define these in a `.env` file in the root directory of your project:
-- **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project. **Required**.
+- **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project. **Optional** if the `FILTER` variable is defined.
+- **`FILTER`**: Allows space-separated filters for fine-grained control over the container jobs. Example: `FILTER="name=my_app com.docker.compose.project=my_project"`. Can be used independently or in combination with `COMPOSE_PROJECT_NAME`.
 - **`DEBUG`**: Set to `true` to enable detailed output for debugging purposes.
 - **`CRON_LOG_DIR`**: Defines the directory where cron stores log files for executed jobs, defaulting to `/var/log/cron`.
-- **`TZ`**: The timezone used for scheduling cron jobs
+- **`TZ`**: The timezone used for scheduling cron jobs.
+
+> **Tip:** Use the `FILTER` variable when you need additional control over the filtering beyond the `COMPOSE_PROJECT_NAME`.
 
 ### Volume Mounts
 - **`/var/run/docker.sock`**: This is used to enable the Docker client inside the container to communicate with the Docker daemon running on the host. Be careful when using this as it provides elevated privileges.
