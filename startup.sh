@@ -54,8 +54,17 @@ cleanup() {
 # Set a trap to catch the SIGTERM signal
 trap 'cleanup' TERM
 
-# Watch for Docker events and update cron jobs
-docker events --filter 'event=start' --filter 'event=die' --filter 'event=destroy' | while IFS= read -r LINE; do
+# Construct docker events command with required filters
+DOCKER_EVENTS_CMD="docker events --filter 'event=start' --filter 'event=die' --filter 'event=destroy'"
+
+# Always filter by COMPOSE_PROJECT_NAME
+DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter 'label=com.docker.compose.project=$COMPOSE_PROJECT_NAME'"
+
+# Enforce filtering by cron.enabled=true
+DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter 'label=cron.enabled=true'"
+
+# Execute the docker events command
+eval "$DOCKER_EVENTS_CMD" | while IFS= read -r LINE; do
   log "Docker event detected: $LINE"
   handle_event &
 done

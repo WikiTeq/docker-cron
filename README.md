@@ -34,6 +34,7 @@ services:
     build: ./app
     container_name: app
     labels:
+      cron.enabled: true
       cron.mytask.schedule: "* * * * *"
       cron.mytask.command: "/usr/local/bin/app_script.sh"
       cron.another_task.schedule: "*/2 * * * *"
