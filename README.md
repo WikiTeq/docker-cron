@@ -26,7 +26,7 @@ services:
       - ./logs/cron:/var/log/cron
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
-      - FILTER="name=my_app com.docker.compose.project=my_project"
+      - FILTER="label=cron.extra_label=one label=com.docker.compose.project=my_project"
       - DEBUG=${CRON_DEBUG:-0}
       - TZ=America/New_York
 
@@ -46,7 +46,7 @@ This example shows how to schedule multiple cron jobs using cron syntax. The Doc
 
 ### Environment Variables
 - **`COMPOSE_PROJECT_NAME`**: Specifies the name of the Docker Compose project, allowing the cron to target jobs in that specific project. **Optional** if the `FILTER` variable is defined.
-- **`FILTER`**: Allows space-separated filters for fine-grained control over the container jobs. Example: `FILTER="name=my_app com.docker.compose.project=my_project"`. Can be used independently or in combination with `COMPOSE_PROJECT_NAME`.
+- **`FILTER`**: Allows space-separated filters for fine-grained control over the container jobs. Example: `FILTER="label=cron.extra_label=one label=com.docker.compose.project=my_project"`. Can be used independently or in combination with `COMPOSE_PROJECT_NAME`.
 - **`DEBUG`**: Set to `true` to enable detailed output for debugging purposes.
 - **`CRON_LOG_DIR`**: Defines the directory where cron stores log files for executed jobs, defaulting to `/var/log/cron`.
 - **`TZ`**: The timezone used for scheduling cron jobs.
