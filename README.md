@@ -13,18 +13,7 @@ This is a Docker-based job scheduler that allows you to define and run cron jobs
 
 ## Getting Started
 
-To start using this Docker image, you can create a `docker-compose.yml` configuration as shown in the example below. We should set the `CRON_FILTER_BY_LABEL` environment variable in the corresponding `docker-compose.yml` or `.env` file.
-
-**Apply the `cron.enabled=true` Label to Relevant Containers**:
-   For containers requiring cron jobs, add the `cron.enabled=true` label. For instance, in your `matomo` service, the Ofelia labels already define tasks, but if you want the `docker-cron` service to process this container, ensure the label `cron.enabled=true` is added:
-
-   ```yaml
-   labels:
-     - cron.enabled=true
-     - cron.task.schedule=@daily
-     - cron.task.command=./console core:archive --force-all-websites --url="${MATOMO_URL:-http://matomo}"
-   ```
-
+To start using this Docker image, you can create a `docker-compose.yml` configuration as shown in the example below.
 
 ### Example `docker-compose.yml`
 ```yaml
@@ -38,7 +27,6 @@ services:
       - ./logs/cron:/var/log/cron
     environment:
       - COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
-      - CRON_FILTER_BY_LABEL=false # we can explicitly turn off or turn one this flag
       - DEBUG=${CRON_DEBUG:-0}
       - TZ=America/New_York
 
@@ -46,6 +34,7 @@ services:
     build: ./app
     container_name: app
     labels:
+      cron.enabled: true
       cron.mytask.schedule: "* * * * *"
       cron.mytask.command: "/usr/local/bin/app_script.sh"
       cron.another_task.schedule: "*/2 * * * *"
@@ -101,22 +90,6 @@ If you want to contribute to this project, please feel free to submit a pull req
 - **Non-Root User**: Modify the Dockerfile to run the container as a non-root user to enhance security and reduce potential risks.
 - **Automated Testing**: Implement automated unit and integration testing to ensure code reliability and prevent issues during deployment.
 - **Health Check Endpoint**: Add a health check mechanism to verify that cron jobs are running correctly and that the container is in a healthy state.
-
-### Behavior Scenarios:
-
-| **`COMPOSE_PROJECT_NAME` Defined** | **`CRON_FILTER_BY_LABEL`** | **`cron.enabled=true` Needed?** | **Result**                                    |
-|------------------------------------|----------------------------|----------------------------------|-----------------------------------------------|
-| Yes                                | Not set                    | No                               | Processes all events in the specified project |
-| Yes                                | `false`                    | No                               | Processes all events in the specified project |
-| Yes                                | `true`                     | Yes                              | Only processes containers with `cron.enabled=true` in the project |
-| No                                 | Any                        | No                               | **Error:** `COMPOSE_PROJECT_NAME` is required |
-
----
-
-### To Ensure It Works in Your Case:
-
-- **Set `COMPOSE_PROJECT_NAME`**: Make sure this is defined in your `.env` file or passed as an environment variable.
-- **Do Not Set `CRON_FILTER_BY_LABEL` or Set It to `false`**: This ensures `docker-cron` processes all containers within your project.
 
 ## Contact
 For any questions or support, contact the maintainers at contact@wikiteq.com.
