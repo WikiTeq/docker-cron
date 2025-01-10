@@ -29,16 +29,39 @@ extract_cron_command() {
   docker inspect "$_container_id" | jq -r --arg key "$_job_key" '.[0].Config.Labels[$key] // empty'
 }
 
-# Get the project name
-if [ -z "$COMPOSE_PROJECT_NAME" ]; then
-  echo "$(timestamp) | The COMPOSE_PROJECT_NAME variable is required but not set (this should have been caught earlier)."
+# Consolidated debug message for COMPOSE_PROJECT_NAME and FILTER variables
+if [ -z "$COMPOSE_PROJECT_NAME" ] && [ -z "$FILTER" ]; then
+  echo "$(timestamp) | Neither COMPOSE_PROJECT_NAME nor FILTER is defined. At least one is required."
   exit 1
+elif [ -z "$COMPOSE_PROJECT_NAME" ]; then
+  echo "$(timestamp) | COMPOSE_PROJECT_NAME is not defined. Using FILTER for filtering: '$FILTER'."
+elif [ -z "$FILTER" ]; then
+  echo "$(timestamp) | FILTER is not defined. Using COMPOSE_PROJECT_NAME for filtering: '$COMPOSE_PROJECT_NAME'."
+else
+  echo "$(timestamp) | Both COMPOSE_PROJECT_NAME and FILTER are defined:"
+  echo "$(timestamp) | COMPOSE_PROJECT_NAME='$COMPOSE_PROJECT_NAME', FILTER='$FILTER'."
 fi
 
-echo "$(timestamp) | The cron service handles jobs for the docker-compose stack defined in the COMPOSE_PROJECT_NAME variable: $COMPOSE_PROJECT_NAME"
+# Constructing the docker ps command
+DOCKER_PS_CMD="docker ps"
 
-# Filter containers by project and cron.enabled=true
-containers=$(docker ps --filter "label=com.docker.compose.project=$COMPOSE_PROJECT_NAME" --filter "label=cron.enabled=true" -q)
+# Filter by COMPOSE_PROJECT_NAME (if set)
+if [ -n "$COMPOSE_PROJECT_NAME" ]; then
+  DOCKER_PS_CMD="$DOCKER_PS_CMD --filter 'label=com.docker.compose.project=$COMPOSE_PROJECT_NAME'"
+fi
+
+# Add additional filters from the FILTER variable (if set)
+if [ -n "$FILTER" ]; then
+  for filter in $FILTER; do
+    DOCKER_PS_CMD="$DOCKER_PS_CMD --filter '$filter'"
+  done
+fi
+
+# Enforce filtering by "cron.enabled=true"
+DOCKER_PS_CMD="$DOCKER_PS_CMD --filter 'label=cron.enabled=true'"
+
+# Get filtered containers
+containers=$(eval "$DOCKER_PS_CMD -q")
 
 echo "$(timestamp) | Updating cron jobs..."
 touch $CRON_FILE_NEW
