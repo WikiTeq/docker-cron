@@ -21,24 +21,22 @@ update_cron() {
   /usr/local/bin/update_cron.sh
 }
 
-# File to indicate if an update is already scheduled
-UPDATE_SCHEDULED="/tmp/update_scheduled.lock"
+# Lock file for preventing concurrent updates
+UPDATE_LOCK="/tmp/update_cron.lock"
 
-# Wrapper function to handle concurrent events
+# Wrapper function to handle concurrent events with proper locking
 handle_event() {
-  if [ -f "$UPDATE_SCHEDULED" ]; then
-    # If update is already scheduled or running, mark the need for a subsequent update
-    touch "$UPDATE_SCHEDULED"
-  else
-    # Schedule the update
-    touch "$UPDATE_SCHEDULED"
-    while [ -f "$UPDATE_SCHEDULED" ]; do
-      # Do not rush
-      sleep 2
-      rm -f "$UPDATE_SCHEDULED"
-      update_cron
-    done
-  fi
+  # Use flock to ensure only one update process runs at a time
+  (
+    flock -x 9 || {
+      log "Another update is already running, skipping this event"
+      return 0
+    }
+
+    log "Starting cron update..."
+    update_cron
+    log "Cron update completed"
+  ) 9>"$UPDATE_LOCK"
 }
 
 # Initial update
@@ -47,7 +45,7 @@ handle_event &
 # Define a function to handle cleanup on SIGTERM
 cleanup() {
   echo "Received SIGTERM, cleaning up..."
-  rm -f "$UPDATE_SCHEDULED"
+  rm -f "$UPDATE_LOCK"
   exit 0
 }
 

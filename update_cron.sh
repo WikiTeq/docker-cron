@@ -3,11 +3,17 @@
 DIR=$(dirname "$0")
 . "$DIR/functions.sh"
 
-# Temp cron file paths
-CRON_FILE_TEST="/tmp/cron_test"
-CRON_FILE_NEW="/root/crontab.new"
+# Temp cron file paths with unique identifiers to prevent conflicts
+CRON_FILE_TEST="/tmp/cron_test_$$"
+CRON_FILE_NEW="/tmp/crontab_new_$$"
 CRON_FILE="/root/crontab"
 CRON_LOG_DIR=${CRON_LOG_DIR:-/var/log/cron}
+
+# Ensure cleanup on exit
+cleanup() {
+  rm -f "$CRON_FILE_TEST" "$CRON_FILE_NEW"
+}
+trap cleanup EXIT
 
 mkdir -p "$CRON_LOG_DIR"
 
@@ -64,12 +70,15 @@ DOCKER_PS_CMD="$DOCKER_PS_CMD --filter 'label=cron.enabled=true'"
 containers=$(eval "$DOCKER_PS_CMD -q")
 
 echo "$(timestamp) | Updating cron jobs..."
-touch $CRON_FILE_NEW
+
+# Create a new crontab file with a unique name
+true > "$CRON_FILE_NEW"
 
 # Process each container
 for container in $containers; do
   cron_jobs=$(extract_cron_jobs "$container")
   target_container=$(docker inspect -f '{{.Name}}' "$container" | cut -c2-) # Remove leading /
+
   if [ -z "$cron_jobs" ]; then
     log "No cron jobs found for container: $target_container ($container)"
   else
@@ -88,21 +97,22 @@ for container in $containers; do
       # Check if both schedule and command labels are set
       if [ -n "$job_schedule" ] && [ -n "$job_command" ]; then
         cron_entry="$job_schedule docker exec $target_container sh -c '$job_command' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log"
+
         # Run the supercronic test
-        echo "$cron_entry" > $CRON_FILE_TEST
-        if ! supercronic -test $CRON_FILE_TEST > /dev/null 2>&1; then
+        echo "$cron_entry" > "$CRON_FILE_TEST"
+        if ! supercronic -test "$CRON_FILE_TEST" > /dev/null 2>&1; then
           echo "$(timestamp) | ========================================================"
           printf "\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n\n"
           echo "BAD CRON JOB: '$cron_entry'"
-          supercronic -debug -test $CRON_FILE_TEST
+          supercronic -debug -test "$CRON_FILE_TEST"
           printf "==================================================================================\n\n"
           # TODO make the cron container unhealthy
         else
-          echo "$cron_entry" >> $CRON_FILE_NEW # Write in one line to the cron file
+          echo "$cron_entry" >> "$CRON_FILE_NEW"
           log "Scheduled task for $target_container: $cron_entry"
         fi
       else
-        echo "$(timestamp) | Error: job_schedule or job_command is missing."
+        echo "$(timestamp) | Error: job_schedule or job_command is missing for job $job_key in container $target_container."
       fi
     done
   fi
@@ -124,21 +134,21 @@ if ! diff -u "$CRON_FILE" "$CRON_FILE_NEW" > /dev/null; then
   fi
 
   # Update the crontab file if it looks good for supercronic (we tested it one by one line above, but to make sure)
-  if ! supercronic -test $CRON_FILE_NEW > /dev/null 2>&1; then
+  if ! supercronic -test "$CRON_FILE_NEW" > /dev/null 2>&1; then
     echo "$(timestamp) | ########################################################"
     printf "\nERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n\n"
     echo "SOMETHING IS WRONG IN THE CRONTAB FILE"
-    supercronic -debug -test $CRON_FILE_NEW
+    supercronic -debug -test "$CRON_FILE_NEW"
     echo "ERROR: CHANGES ARE NOT APPLIED."
     echo "CURRENT CRONTAB FILE IS:"
     cat "$CRON_FILE"
     printf "##################################################################################\n\n"
     # TODO make the cron container unhealthy
   else
-    cat "$CRON_FILE_NEW" > "$CRON_FILE"
+    # Atomic update using mv to prevent race conditions
+    mv "$CRON_FILE_NEW" "$CRON_FILE"
+    log "Crontab file updated successfully"
   fi
 else
   echo "$(timestamp) | No changes detected in crontab file."
 fi
-
-rm "$CRON_FILE_NEW"
