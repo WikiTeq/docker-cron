@@ -11,9 +11,9 @@ if [ -z "$FILTER" ] && [ -z "$COMPOSE_PROJECT_NAME" ]; then
 fi
 
 if isTrue "$DEBUG"; then
-    supercronic -debug -inotify /root/crontab &
+  supercronic -debug -inotify /root/crontab &
 else
-    supercronic -inotify /root/crontab &
+  supercronic -inotify /root/crontab &
 fi
 
 # Function to update cron jobs based on container labels
@@ -21,23 +21,28 @@ update_cron() {
   /usr/local/bin/update_cron.sh
 }
 
-# File to indicate if an update is already scheduled
-UPDATE_SCHEDULED="/tmp/update_scheduled.lock"
+# Lock file for preventing concurrent updates
+UPDATE_LOCK="/tmp/update_cron.lock"
 
-# Wrapper function to handle concurrent events
+# Variables for debouncing
+UPDATE_PENDING_FLAG="/tmp/cron_update_pending"
+
+# Function to handle events with debouncing and proper locking
 handle_event() {
-  if [ -f "$UPDATE_SCHEDULED" ]; then
-    # If update is already scheduled or running, mark the need for a subsequent update
-    touch "$UPDATE_SCHEDULED"
+  if [ -f "$UPDATE_PENDING_FLAG" ]; then
+    log "Another update is already running, skipping this event"
   else
     # Schedule the update
-    touch "$UPDATE_SCHEDULED"
-    while [ -f "$UPDATE_SCHEDULED" ]; do
-      # Do not rush
-      sleep 2
-      rm -f "$UPDATE_SCHEDULED"
+    touch "$UPDATE_PENDING_FLAG"
+    # Do not rush
+    sleep 2
+    rm -f "$UPDATE_PENDING_FLAG"
+    (
+      flock 9  # Blocking lock - wait for previous update to finish
+      log "Starting cron update..."
       update_cron
-    done
+      log "Cron update completed"
+    ) 9>"$UPDATE_LOCK"
   fi
 }
 
@@ -47,7 +52,7 @@ handle_event &
 # Define a function to handle cleanup on SIGTERM
 cleanup() {
   echo "Received SIGTERM, cleaning up..."
-  rm -f "$UPDATE_SCHEDULED"
+  rm -f "$UPDATE_LOCK" "$UPDATE_PENDING_FLAG"
   exit 0
 }
 
