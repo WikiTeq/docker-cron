@@ -11,6 +11,7 @@ This is a Docker-based job scheduler that allows you to define and run cron jobs
 - **Flexible Filtering**: Supports filtering containers based on `COMPOSE_PROJECT_NAME`, space-separated filters in the `FILTER` variable, or both.
 - **Easy Configuration**: Define all your jobs using Docker labels, making configuration straightforward.
 - **Logging**: Provides logging for all job executions, making monitoring and debugging simple.
+- **Log Archiving**: Includes an archiving utility that compacts older logs into monthly/daily/hourly/minute archives according to completeness, keeping only a configurable number of the newest logs.
 
 ## Getting Started
 
@@ -56,6 +57,26 @@ This example shows how to schedule multiple cron jobs using cron syntax. The Doc
 ### Volume Mounts
 - **`/var/run/docker.sock`**: This is used to enable the Docker client inside the container to communicate with the Docker daemon running on the host. Be careful when using this as it provides elevated privileges.
 - **`./logs/cron:/var/log/cron`**: Mount a directory to store the cron logs.
+
+## Log Archiving
+
+The image ships with `archive-cron-logs`, a log archiving script designed for the timestamped log files produced by this image.
+
+- **Invocation**: `archive-cron-logs <target_count>` where `target_count` is the desired number of log files per period (granularity) to trigger creating an archive. Example: `archive-cron-logs 20`.
+  - The script processes logs from oldest to newest and groups them by time periods (year, month, day, hour, minute, second).
+  - When the current period accumulates `target_count` files, an archive for that period is created, and those files are removed.
+  - Additional archives for adjacent periods are created so archived ranges do not intersect the active period.
+- **Recent logs preservation**: The script skips the newest `target_count` log files to keep the latest logs easy to read.
+- **Naming**: When all files in a group belong to the same task, the task name is appended to the archive name as shown above.
+
+You can schedule archiving via container labels, for example in `docker-compose`:
+
+```yaml
+labels:
+  - cron.enabled=true
+  - cron.rotate_cron_logs.schedule=@daily
+  - cron.rotate_cron_logs.command=archive-cron-logs 20
+```
 
 ## Supercronic Integration
 

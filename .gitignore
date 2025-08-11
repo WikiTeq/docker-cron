@@ -1,0 +1,12 @@
+WikiTeq-docker-cron.webp
+
+# Local test artifacts
+test_*/
+*.tar.gz
+
+# Editor/OS noise
+.DS_Store
+*.swp
+*.swo
+*.log
+
