@@ -11,8 +11,8 @@ services:
       # Enable cron scheduling for the cron container itself
       - cron.enabled=true
       # Log archiving job - runs monthly and creates archives when a period accumulates 100 files
-      - cron.rotate_cron_logs.schedule=@monthly
-      - cron.rotate_cron_logs.command=archive-cron-logs 100
+      - cron.archive_cron_logs.schedule=@monthly
+      - cron.archive_cron_logs.command=archive-cron-logs 100
 
   app:
     build: ./app
