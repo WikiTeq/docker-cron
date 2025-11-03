@@ -2,10 +2,10 @@
 
 # Utility functions for log management
 
-# Find the oldest tar.gz archive by date and time in filename
-# Usage: find_oldest_archive <directory>
-# Returns: full path to the oldest .tar.gz archive, or empty string if no archives found
-find_oldest_archive() {
+# Find the newest tar.gz archive by date and time in filename
+# Usage: find_newest_archive <directory>
+# Returns: full path to the newest .tar.gz archive, or empty string if no archives found
+find_newest_archive() {
     local folder="$1"
     
     # Validate input
@@ -19,12 +19,13 @@ find_oldest_archive() {
         return 1
     fi
     
-    # Build timestamp:file pairs and sort newest->oldest, then take the last entry (oldest)
-    local oldest_archive=""
+    # Build timestamp:file pairs and sort newest->oldest, then take the first entry (newest)
+    local newest_archive=""
     shopt -s nullglob
     while IFS= read -r pair; do
-        # Iterate all to keep the last (oldest after reverse sort)
-        oldest_archive=$(echo "$pair" | cut -d: -f2-)
+        # Take the first entry (newest after reverse sort)
+        newest_archive=$(echo "$pair" | cut -d: -f2-)
+        break
     done < <(
         for archive_file in "$folder"/*.tar.gz; do
             [ -f "$archive_file" ] || continue
@@ -58,8 +59,8 @@ find_oldest_archive() {
     )
     shopt -u nullglob
     
-    if [ -n "$oldest_archive" ]; then
-        echo "$oldest_archive"
+    if [ -n "$newest_archive" ]; then
+        echo "$newest_archive"
         return 0
     else
         echo ""

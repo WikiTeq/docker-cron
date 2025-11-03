@@ -38,11 +38,11 @@ if [ ! -d "$CRON_LOG_DIR" ]; then
     exit 1
 fi
 
-# Get previous_period from oldest archive
+# Get previous_period from newest archive (most recently created)
 previous_period=""
-oldest_archive=$(find_oldest_archive "$CRON_LOG_DIR")
-if [ -n "$oldest_archive" ]; then
-    archive_basename=$(basename "$oldest_archive" .tar.gz)
+newest_archive=$(find_newest_archive "$CRON_LOG_DIR")
+if [ -n "$newest_archive" ]; then
+    archive_basename=$(basename "$newest_archive" .tar.gz)
     previous_period=$(parse_previous_period_from_archive_name "$archive_basename")
 fi
 
