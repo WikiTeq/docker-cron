@@ -4,7 +4,7 @@ LABEL maintainers="pavel@wikiteq.com"
 LABEL org.opencontainers.image.source=https://github.com/WikiTeq/docker-cron
 
 # Install required tools
-RUN apk add --no-cache jq curl docker-cli tzdata
+RUN apk add --no-cache jq curl docker-cli tzdata bash
 
 # Latest releases available at https://github.com/aptible/supercronic/releases
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.32/supercronic-linux-amd64 \
@@ -27,6 +27,13 @@ RUN chmod +x /usr/local/bin/startup.sh
 # Copy the cron update script into the container
 COPY update_cron.sh /usr/local/bin/update_cron.sh
 RUN chmod +x /usr/local/bin/update_cron.sh
+
+COPY archive-cron-logs-functions.sh /usr/local/bin/archive-cron-logs-functions.sh
+RUN chmod +x /usr/local/bin/archive-cron-logs-functions.sh
+
+# Copy the log archiving script into the container
+COPY archive-cron-logs.sh /usr/local/bin/archive-cron-logs
+RUN chmod +x /usr/local/bin/archive-cron-logs
 
 # Run the startup script at container startup
 CMD ["/usr/local/bin/startup.sh"]
