@@ -68,6 +68,7 @@ The image ships with `archive-cron-logs`, a log archiving script designed for th
   - Additional archives for adjacent periods are created so archived ranges do not intersect the active period.
 - **Recent logs preservation**: The script skips the newest `target_count` log files to keep the latest logs easy to read.
 - **Naming**: When all files in a group belong to the same task, the task name is appended to the archive name as shown above.
+- **Directory layout**: Archives are grouped by year in subdirectories (e.g. `2025-01-01_taskname.tar.gz` is stored as `2025/01-01_taskname.tar.gz`). The script also discovers existing archives in both the flat directory and year subdirs.
 
 You can schedule archiving via container labels, for example in `docker-compose`:
 

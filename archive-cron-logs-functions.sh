@@ -19,7 +19,8 @@ find_newest_archive() {
         return 1
     fi
     
-    # Build timestamp:file pairs and sort newest->oldest, then take the first entry (newest)
+    # Build timestamp:file pairs and sort newest->oldest, then take the first entry (newest).
+    # Look in both flat dir ($folder/*.tar.gz) and year subdirs ($folder/*/*.tar.gz).
     local newest_archive=""
     shopt -s nullglob
     while IFS= read -r pair; do
@@ -27,6 +28,38 @@ find_newest_archive() {
         newest_archive=$(echo "$pair" | cut -d: -f2-)
         break
     done < <(
+        for archive_file in "$folder"/*/*.tar.gz; do
+            [ -f "$archive_file" ] || continue
+            local year_subdir
+            year_subdir=$(basename "$(dirname "$archive_file")")
+            local basename_archive
+            basename_archive=$(basename "$archive_file")
+            local name_without_ext="${basename_archive%.tar.gz}"
+            local period_key="${year_subdir}-${name_without_ext}"
+            local timestamp=""
+            if [[ "$period_key" =~ ^([0-9]{4})(_.*)?$ ]]; then
+                local year="${BASH_REMATCH[1]}"
+                timestamp="${year}0101000000"
+            elif [[ "$period_key" =~ ^([0-9]{4})-([0-9]{2})(_.*)?$ ]]; then
+                local year="${BASH_REMATCH[1]}"; local month="${BASH_REMATCH[2]}"
+                timestamp="${year}${month}01000000"
+            elif [[ "$period_key" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})(_.*)?$ ]]; then
+                local year="${BASH_REMATCH[1]}"; local month="${BASH_REMATCH[2]}"; local day="${BASH_REMATCH[3]}"
+                timestamp="${year}${month}${day}000000"
+            elif [[ "$period_key" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})_([0-9]{2})(_.*)?$ ]]; then
+                local year="${BASH_REMATCH[1]}"; local month="${BASH_REMATCH[2]}"; local day="${BASH_REMATCH[3]}"; local hour="${BASH_REMATCH[4]}"
+                timestamp="${year}${month}${day}${hour}0000"
+            elif [[ "$period_key" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})_([0-9]{2})-([0-9]{2})(_.*)?$ ]]; then
+                local year="${BASH_REMATCH[1]}"; local month="${BASH_REMATCH[2]}"; local day="${BASH_REMATCH[3]}"; local hour="${BASH_REMATCH[4]}"; local minute="${BASH_REMATCH[5]}"
+                timestamp="${year}${month}${day}${hour}${minute}00"
+            elif [[ "$period_key" =~ ^([0-9]{4})-([0-9]{2})-([0-9]{2})_([0-9]{2})-([0-9]{2})-([0-9]{2})_UTC(_.*)?$ ]]; then
+                local year="${BASH_REMATCH[1]}"; local month="${BASH_REMATCH[2]}"; local day="${BASH_REMATCH[3]}"; local hour="${BASH_REMATCH[4]}"; local minute="${BASH_REMATCH[5]}"; local second="${BASH_REMATCH[6]}"
+                timestamp="${year}${month}${day}${hour}${minute}${second}"
+            fi
+            if [ -n "$timestamp" ]; then
+                printf '%s:%s\n' "$timestamp" "$archive_file"
+            fi
+        done
         for archive_file in "$folder"/*.tar.gz; do
             [ -f "$archive_file" ] || continue
             local basename_archive
@@ -55,8 +88,8 @@ find_newest_archive() {
             if [ -n "$timestamp" ]; then
                 printf '%s:%s\n' "$timestamp" "$archive_file"
             fi
-        done | LC_ALL=C sort -r
-    )
+        done
+    ) | LC_ALL=C sort -r
     shopt -u nullglob
     
     if [ -n "$newest_archive" ]; then

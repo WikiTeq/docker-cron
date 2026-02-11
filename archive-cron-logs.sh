@@ -42,7 +42,14 @@ fi
 previous_period=""
 newest_archive=$(find_newest_archive "$CRON_LOG_DIR")
 if [ -n "$newest_archive" ]; then
-    archive_basename=$(basename "$newest_archive" .tar.gz)
+    archive_parent=$(dirname "$newest_archive")
+    archive_base=$(basename "$newest_archive" .tar.gz)
+    if [ "$archive_parent" != "$CRON_LOG_DIR" ]; then
+        year_subdir=$(basename "$archive_parent")
+        archive_basename="${year_subdir}-${archive_base}"
+    else
+        archive_basename="$archive_base"
+    fi
     previous_period=$(parse_previous_period_from_archive_name "$archive_basename")
 fi
 
@@ -110,7 +117,16 @@ while :; do
                 if [ -n "$common_task" ]; then
                     archive_name="${archive_name}_${common_task}"
                 fi
-                archive_path="$CRON_LOG_DIR/${archive_name}.tar.gz"
+                # Group archives by year subdirectory: 2025-01-01_task -> 2025/01-01_task.tar.gz
+                archive_year="${archive_name:0:4}"
+                if [ "${#archive_name}" -gt 4 ]; then
+                    archive_rest="${archive_name:5}"
+                else
+                    archive_rest="$archive_name"
+                fi
+                archive_year_dir="$CRON_LOG_DIR/$archive_year"
+                mkdir -p "$archive_year_dir"
+                archive_path="$archive_year_dir/${archive_rest}.tar.gz"
 
                 rel_files=()
                 while IFS= read -r f; do
