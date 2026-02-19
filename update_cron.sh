@@ -96,7 +96,9 @@ for container in $containers; do
 
       # Check if both schedule and command labels are set
       if [ -n "$job_schedule" ] && [ -n "$job_command" ]; then
-        cron_entry="$job_schedule docker exec $target_container sh -c '$job_command' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log"
+        # Escape single quotes in job_command for safe embedding in sh -c '...'
+        job_command_escaped=$(printf '%s\n' "$job_command" | sed "s/'/'\\\\''/g")
+        cron_entry="$job_schedule docker exec $target_container sh -c '${job_command_escaped}' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log"
 
         # Run the supercronic test
         echo "$cron_entry" > "$CRON_FILE_TEST"
