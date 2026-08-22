@@ -65,6 +65,10 @@ DOCKER_EVENTS_CMD="docker events --filter 'event=start' --filter 'event=die' --f
 # Enforce filtering by cron.enabled=true
 DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter 'label=cron.enabled=true'"
 
+# Strip surrounding double quotes from FILTER (see update_cron.sh, SLOP-240)
+FILTER=${FILTER#\"}
+FILTER=${FILTER%\"}
+
 # Filter by COMPOSE_PROJECT_NAME if set
 if [ -n "$COMPOSE_PROJECT_NAME" ]; then
   DOCKER_EVENTS_CMD="$DOCKER_EVENTS_CMD --filter 'label=com.docker.compose.project=$COMPOSE_PROJECT_NAME'"
