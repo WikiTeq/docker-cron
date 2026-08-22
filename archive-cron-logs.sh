@@ -70,6 +70,14 @@ while :; do
         break
     fi
 
+    # Guard against an endless loop: if this pass produced no archivable
+    # group (no files, everything inside the protected window, or the first
+    # group is below target_count), nothing can change on a re-run, so stop.
+    if ! printf '%s\n' "$result" | sed -n '2p' | grep -q .; then
+        echo "No archivable group available (nothing outside the protected window); stopping."
+        break
+    fi
+
     first_line=$(printf '%s\n' "$result" | sed -n '1p')
     if [ -n "$first_line" ]; then
         first_granularity=$(echo "$first_line" | cut -d: -f1)
