@@ -98,7 +98,9 @@ for container in $containers; do
       if [ -n "$job_schedule" ] && [ -n "$job_command" ]; then
         # Escape single quotes in job_command for safe embedding in sh -c '...'
         job_command_escaped=$(printf '%s\n' "$job_command" | sed "s/'/'\\\\''/g")
-        cron_entry="$job_schedule docker exec $target_container sh -c '${job_command_escaped}' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log"
+        # Log via tee but preserve the job's exit status with pipefail so
+        # supercronic sees failures instead of tee's success (SLOP-237).
+        cron_entry="$job_schedule bash -c 'set -o pipefail; docker exec $target_container sh -c '\"'\"'${job_command_escaped}'\"'\"' 2>&1 | tee -a $CRON_LOG_DIR/\$(date -u +\%Y-\%m-\%d_\%H-\%M-\%S_\%Z)_$job_key.log'"
 
         # Run the supercronic test
         echo "$cron_entry" > "$CRON_FILE_TEST"
