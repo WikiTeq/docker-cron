@@ -51,6 +51,12 @@ fi
 # Constructing the docker ps command
 DOCKER_PS_CMD="docker ps"
 
+# Strip surrounding double quotes from FILTER. Users following older docs set
+# FILTER="..." in list-style compose environment entries, where the quotes
+# become part of the value and silently break every filter (SLOP-240).
+FILTER=${FILTER#\"}
+FILTER=${FILTER%\"}
+
 # Filter by COMPOSE_PROJECT_NAME (if set)
 if [ -n "$COMPOSE_PROJECT_NAME" ]; then
   DOCKER_PS_CMD="$DOCKER_PS_CMD --filter 'label=com.docker.compose.project=$COMPOSE_PROJECT_NAME'"
