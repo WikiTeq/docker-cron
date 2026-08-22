@@ -284,6 +284,18 @@ derive_granularity_to_lock() {
         if [[ "$previous_period" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && [ "$previous_period" = "$day" ]; then
             echo "hour"; return 0
         fi
+        # Check if previous_period is an hour that matches
+        if [[ "$previous_period" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}$ ]] && [ "$previous_period" = "$hour" ]; then
+            echo "minute"; return 0
+        fi
+        # Check if previous_period is a minute that matches
+        if [[ "$previous_period" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}$ ]] && [ "$previous_period" = "$minute" ]; then
+            echo "second"; return 0
+        fi
+        # A second-granularity previous period locks nothing finer
+        if [[ "$previous_period" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo ""; return 0
+        fi
         # Check if previous_period matches month (even if it's a day)
         if [ "${previous_period:0:7}" = "$month" ]; then
             echo "day"; return 0
@@ -369,14 +381,23 @@ common_task_name_from_list() {
 #   YYYY-MM-DD_HH-MM
 #   YYYY-MM-DD_HH-MM-SS
 # With an optional suffix: _<task>
+# The period itself may contain underscore-separated fields, so the task
+# suffix is stripped by matching the timestamp grammar from the start of the
+# name instead of cutting at underscores (which truncated hour/minute/second
+# periods to day precision and stalled archiving).
 # Usage: parse_previous_period_from_archive_name <archive_name>
 parse_previous_period_from_archive_name() {
     local name="$1"
-    # Strip optional _<task> suffix
-    local core
-    core=$(printf '%s' "$name" | sed 's/\(_[^_][^_]*\)$//')
-    # Return the core period key as-is (already in desired formats like YYYY, YYYY-MM, ...)
-    printf '%s' "$core"
+    local period=""
+    if [[ "$name" =~ ^([0-9]{4})(-[0-9]{2})?(-[0-9]{2})?(_[0-9]{2})?(-[0-9]{2})?(-[0-9]{2})?($|_[^_]) ]]; then
+        period="${BASH_REMATCH[1]}"
+        [ -n "${BASH_REMATCH[2]:-}" ] && period="${period}${BASH_REMATCH[2]}"
+        [ -n "${BASH_REMATCH[3]:-}" ] && period="${period}${BASH_REMATCH[3]}"
+        [ -n "${BASH_REMATCH[4]:-}" ] && period="${period}${BASH_REMATCH[4]}"
+        [ -n "${BASH_REMATCH[5]:-}" ] && period="${period}${BASH_REMATCH[5]}"
+        [ -n "${BASH_REMATCH[6]:-}" ] && period="${period}${BASH_REMATCH[6]}"
+    fi
+    printf '%s' "$period"
 }
 
 # Helper function to update period state
