@@ -28,6 +28,7 @@ find_newest_archive() {
         newest_archive=$(echo "$pair" | cut -d: -f2-)
         break
     done < <(
+        {
         for archive_file in "$folder"/*/*.tar.gz; do
             [ -f "$archive_file" ] || continue
             local year_subdir
@@ -35,7 +36,21 @@ find_newest_archive() {
             local basename_archive
             basename_archive=$(basename "$archive_file")
             local name_without_ext="${basename_archive%.tar.gz}"
-            local period_key="${year_subdir}-${name_without_ext}"
+            # Reconstruct the full period key from the year subdir and the
+            # archive base name. The writer strips the "YYYY-" prefix for
+            # finer granularities ("2025/01-01.tar.gz" -> "2025-01-01") but
+            # keeps the full key for year-granularity archives
+            # ("2025/2025.tar.gz" -> "2025", "2025/2025_task.tar.gz" ->
+            # "2025_task"). A writer revision also stored year+task archives
+            # as "<year>/<task>.tar.gz" ("2025/task.tar.gz" -> "2025_task").
+            local period_key
+            if [[ "$name_without_ext" =~ ^[0-9]{4}(_.*)?$ ]]; then
+                period_key="$name_without_ext"
+            elif [[ "$name_without_ext" =~ ^[0-9] ]]; then
+                period_key="${year_subdir}-${name_without_ext}"
+            else
+                period_key="${year_subdir}_${name_without_ext}"
+            fi
             local timestamp=""
             if [[ "$period_key" =~ ^([0-9]{4})(_.*)?$ ]]; then
                 local year="${BASH_REMATCH[1]}"
@@ -89,7 +104,8 @@ find_newest_archive() {
                 printf '%s:%s\n' "$timestamp" "$archive_file"
             fi
         done
-    ) | LC_ALL=C sort -r
+        } | LC_ALL=C sort -r
+    )
     shopt -u nullglob
     
     if [ -n "$newest_archive" ]; then

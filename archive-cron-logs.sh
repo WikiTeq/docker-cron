@@ -46,7 +46,19 @@ if [ -n "$newest_archive" ]; then
     archive_base=$(basename "$newest_archive" .tar.gz)
     if [ "$archive_parent" != "$CRON_LOG_DIR" ]; then
         year_subdir=$(basename "$archive_parent")
-        archive_basename="${year_subdir}-${archive_base}"
+        # Reconstruct the full period key (mirrors find_newest_archive):
+        # year-granularity archives keep the full key ("2025/2025_task.tar.gz"
+        # -> "2025_task"); finer granularities had "YYYY-" stripped
+        # ("2025/01-01.tar.gz" -> "2025-01-01"); a writer revision also stored
+        # year+task as "<year>/<task>.tar.gz" ("2025/task.tar.gz" ->
+        # "2025_task").
+        if [[ "$archive_base" =~ ^[0-9]{4}(_.*)?$ ]]; then
+            archive_basename="$archive_base"
+        elif [[ "$archive_base" =~ ^[0-9] ]]; then
+            archive_basename="${year_subdir}-${archive_base}"
+        else
+            archive_basename="${year_subdir}_${archive_base}"
+        fi
     else
         archive_basename="$archive_base"
     fi
@@ -119,9 +131,13 @@ while :; do
                 fi
                 # Group archives by year subdirectory: 2025-01-01_task -> 2025/01-01_task.tar.gz
                 archive_year="${archive_name:0:4}"
-                if [ "${#archive_name}" -gt 4 ]; then
-                    archive_rest="${archive_name:5}"
+                if [[ "$archive_name" =~ ^[0-9]{4}-(.*)$ ]]; then
+                    # Strip the "YYYY-" prefix; the year subdir carries it.
+                    archive_rest="${BASH_REMATCH[1]}"
                 else
+                    # Year-granularity key ("2025", "2025_task"): keep the
+                    # full key so the period stays reconstructable from the
+                    # year subdir.
                     archive_rest="$archive_name"
                 fi
                 archive_year_dir="$CRON_LOG_DIR/$archive_year"
