@@ -49,6 +49,12 @@ jobs:
       -
         name: Generate tags
         id: generate
+        env:
+          WORKFLOW_REF: ${{ github.ref }}
+          WORKFLOW_EVENT: ${{ github.event_name }}
+          WORKFLOW_SHA: ${{ github.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.head_ref }}
         run: |
 
           # Image ID
@@ -58,21 +64,21 @@ jobs:
           BDATE=$(date +%Y%m%d)
 
           # Change all uppercase to lowercase, just in case
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          IMAGE_ID=$(echo "$IMAGE_ID" | tr '[A-Z]' '[a-z]')
 
           # Strip git ref prefix from version and use it as suffix for version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          VERSION=$(echo "$WORKFLOW_REF" | sed -e 's,.*/\(.*\),\1,')
 
           # For pull requests just extract the PR number
           PR_NUMBER=""
-          [ "${{ github.event_name }}" == "pull_request" ] && VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\)/merge,\1,')
-          [ "${{ github.event_name }}" == "pull_request" ] && PR_NUMBER=$VERSION
+          [ "$WORKFLOW_EVENT" == "pull_request" ] && VERSION=$(echo "$WORKFLOW_REF" | sed -e 's,.*/\(.*\)/merge,\1,')
+          [ "$WORKFLOW_EVENT" == "pull_request" ] && PR_NUMBER=$VERSION
 
           # Append version
-          [ "${{ github.event_name }}" == "pull_request" ] && VERSION=$BDATE-$VERSION
+          [ "$WORKFLOW_EVENT" == "pull_request" ] && VERSION=$BDATE-$VERSION
 
           # Strip "v" prefix from tag name if it's a tag
-          # [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          # [[ "$WORKFLOW_REF" == "refs/tags/"* ]] && VERSION=$(echo "$VERSION" | sed -e 's/^v//')
 
           # Use Docker `latest` tag convention if it's a master branch build
           [ "$VERSION" == "master" ] && VERSION=latest
@@ -83,18 +89,18 @@ jobs:
           # For master branch also supply an extra tag: <DATE>-<SHA>
           [ "$VERSION" == "latest" ] && REGISTRY_TAGS=$REGISTRY_TAGS,$IMAGE_ID:$BDATE-$(git rev-parse --short HEAD)
 
-          SHA_SHORT=${{ github.sha }}
-          [ "${{ github.event_name }}" == "pull_request" ] && SHA_SHORT=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-8)
+          SHA_SHORT="$WORKFLOW_SHA"
+          [ "$WORKFLOW_EVENT" == "pull_request" ] && SHA_SHORT=$(echo "$PR_HEAD_SHA" | cut -c1-8)
           
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          echo REGISTRY_TAGS=$REGISTRY_TAGS
-          echo SHA_SHORT=$SHA_SHORT
-          echo EventName=${{ github.event_name }}
+          echo "IMAGE_ID=$IMAGE_ID"
+          echo "VERSION=$VERSION"
+          echo "REGISTRY_TAGS=$REGISTRY_TAGS"
+          echo "SHA_SHORT=$SHA_SHORT"
+          echo "EventName=$WORKFLOW_EVENT"
           
-          echo headref=${{ github.head_ref }}
+          echo "headref=$PR_HEAD_REF"
           echo "Final image tag to be pushed:"
-          echo $REGISTRY_TAGS
+          echo "$REGISTRY_TAGS"
           echo "REGISTRY_TAGS=$REGISTRY_TAGS" >> $GITHUB_OUTPUT
           echo "REGISTRY_TAGS_VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "REGISTRY_TAGS_PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
@@ -130,10 +136,14 @@ jobs:
           cache-to: type=gha,mode=max
       -
         name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
+        env:
+          IMAGE_DIGEST: ${{ steps.docker_build.outputs.digest }}
+        run: echo "$IMAGE_DIGEST"
       -
         name: Image tags debug
-        run: echo ${{ steps.generate.outputs.REGISTRY_TAGS }}
+        env:
+          IMAGE_TAGS: ${{ steps.generate.outputs.REGISTRY_TAGS }}
+        run: echo "$IMAGE_TAGS"
 
       -
         name: Notify about image tag
